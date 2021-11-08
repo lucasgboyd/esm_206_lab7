@@ -1,0 +1,125 @@
+---
+title: "Lab 7"
+author: "Lucas Boyd"
+date: "11/8/2021"
+output: html_document
+---
+
+```{r setup, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+library(tidyverse)
+library(palmerpenguins)
+library(GGally)
+library(broom)
+library(kableExtra)
+library(modelsummary)
+library(stargazer)
+```
+
+## intro to ggpairs
+
+Use GGally:: ggpairs() function to create a pairs plot.
+
+```{r}
+ggpairs(penguins)
+```
+
+```{r}
+penguins %>% 
+  select(species, bill_length_mm:body_mass_g)  %>% # keep all columns between bill length and body mass
+  ggpairs(aes(color = species)) # adding a color to make it easier to interpet
+
+# exploring one of the plots that looked like it might be linear
+ggplot(data = penguins, aes(x = bill_depth_mm, y = body_mass_g, group = species)) + 
+  geom_point() +
+  geom_smooth(method = "lm") # make sure you sort by species or this won't work 
+```
+
+## multiple linear regression
+
+Use multiple linear regression to try to understand the relationshop between multiple predictor variables and a single continuous outcome variable (body mass).
+
+Just two variables:
+
+```{r}
+penguins_lm <- lm(body_mass_g ~ flipper_length_mm + bill_depth_mm, data = penguins) # multiple regression
+
+# return just the coefficients 
+penguins_lm
+
+# view all the outputs
+summary(penguins_lm)
+
+# put all of this information into a nice data frame
+penguin_lm_tidy <- tidy(penguins_lm)
+
+penguin_lm_glance <- glance(penguins_lm)
+
+```
+
+We would expect on average, a 51.54g increase in penguin body mass for each 1mm increase in flipper_length, if everything else remains constant. 
+
+Bill depth coefficient `r penguin_lm_tidy$estimate[3]`
+
+## let's try another model
+
+We have thought hard, done a lit review, consulted with experts, deeply explored our data and decided that the three most critical variables to include in this model (with body mass as the outcome variable) are:
+ 
+flipper length
+species
+sex
+
+Create a multiple linear regression model using those three predictor variables
+Then take a look at the model outputs and interpret the coefficients. 
+
+
+```{r}
+lm_2 <- lm(body_mass_g ~ flipper_length_mm + species + sex, data = penguins)
+
+lm_2_glance <- glance(lm_2)
+
+summary(lm_2)
+```
+
+### use broom:: augment to see predicted values
+
+This gives you a table to look at what the linear regression model predicts
+```{r}
+augment(lm_2)
+
+predict(lm_2) # this also does some cool stuff, worth exploring
+```
+
+## use plot() to look at model diagnostics (gotta check out those residuals!)
+
+```{r}
+plot(lm_2)
+```
+
+- conceptual understanding and expertise allows me to responsibly determine that penguin species, sex and flipper length are reasonable predictor variables (make sure you're thinking hard about variables and different variable combinations)
+- diagnostic plots all check out for normality of residuals, homoscedasticity, and no worrisome outliers 
+
+## make output tables
+
+using modelsummary
+
+```{r}
+modelsummary(lm_2)
+```
+
+use stargazer
+
+```{r, results = "asis"}
+stargazer(lm_2, type = "html")
+```
+
+
+
+
+
+
+
+
+
+
+
